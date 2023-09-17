@@ -306,22 +306,50 @@ void game()
 				nextTick += tickInterval;
 			}
 
-			// On v�rifie si assez de temps s'est �coul� pour faire apparaitre une nouvelle pomme
-			if (now >= nextApple)
-			{
-				// On �vite de remplacer un mur par une pomme ...
-				int x = 1 + rand() % (gridWidth - 2);
-				int y = 1 + rand() % (gridHeight - 2);
+			std::uint8_t opcode = client.pendingData[sizeof(messageSize)];
 
-				// On �vite de faire apparaitre une pomme sur un serpent
-				// si c'est le cas on retentera au prochain tour de boucle
-				if (!snake.TestCollision(sf::Vector2i(x, y), true))
-				{
+			switch (opcode)
+			{
+				case RequestApple:
+					int x = 1 + rand() % (gridWidth - 2);
+					int y = 1 + rand() % (gridHeight - 2);
+
+					bool canAppleSpawned = false;
+					while (!canAppleSpawned)
+					{
+						for (Snake snake in snakes) 
+						{
+							if (!snake.TestCollision(sf::Vector2i(x, y), true))
+							{
+								canAppleSpawned = true;
+							}
+						}
+					}
+					
+					std::string message = "foutre le x et le y du spawn pour le SetCell";
+					std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + message.size());
+
+					std::uint16_t size = htons(sizeof(std::uint8_t) + message.size());
+					std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
+
+					buffer[sizeof(std::uint16_t)] = ConfirmApple;
+
+					std::memcpy(&buffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)], message.data(), message.size());
+
+					if (send(sock, (char*)buffer.data(), buffer.size(), 0) == SOCKET_ERROR)
+					{
+						std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
+						return;
+					}
+
+					break;
+				case DistributApple:
+
+					//recup le x et le y dans le message et fait spawn l'apple
+
 					grid.SetCell(x, y, CellType::Apple);
 
-					// On pr�voit la prochaine apparition de pomme
-					nextApple += appleInterval;
-				}
+					break;
 			}
 
 			// On remplit la sc�ne d'une couleur plus jolie pour les yeux

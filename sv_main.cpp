@@ -283,7 +283,7 @@ int server(SOCKET sock)
 							switch (opcode)
 							{
 								case ConfirmApple:
-									std::string confirmAppleresponse = "Spawn Apple";
+									std::string confirmAppleresponse = message;
 									std::uint16_t size = htons(confirmAppleresponse.size());
 
 									std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
