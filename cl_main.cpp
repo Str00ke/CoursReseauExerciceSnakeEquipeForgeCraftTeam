@@ -1,15 +1,34 @@
 #include "sh_constants.hpp"
 #include "cl_resources.hpp"
+#include "sh_protocol.hpp"
 #include "cl_grid.hpp"
 #include "cl_snake.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <winsock2.h>
 #include <iostream>
 #include <winsock2.h> 
 #include <ws2tcpip.h> 
 
 const int windowWidth = cellSize * gridWidth;
 const int windowHeight = cellSize * gridHeight;
+static SOCKET sock;
+
+class Cl_message
+{
+  void SendMessageToServer(SOCKET sock, Opcodes opcode /*, struct message*/ )
+  {
+    /*if (send(sock, static_cast<const char*>(data), static_cast<int>(dataLength), 0) == SOCKET_ERROR)
+    {
+      std::cerr << "failed to send data to server (" << WSAGetLastError() << ")" << std::endl;
+      throw std::runtime_error("failed to send data");
+    }*/
+  }
+};
+
+
+
+
 
 void game();
 void tick(Grid& grid, Snake& snake);
