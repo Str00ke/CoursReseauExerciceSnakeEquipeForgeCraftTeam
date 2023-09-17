@@ -3,38 +3,17 @@
 #include "sh_protocol.hpp"
 #include "cl_grid.hpp"
 #include "cl_snake.hpp"
+#include "cl_message.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <winsock2.h>
 #include <iostream>
-#include <winsock2.h> 
-#include <ws2tcpip.h> 
-#include <map>
 
 const int windowWidth = cellSize * gridWidth;
 const int windowHeight = cellSize * gridHeight;
-static SOCKET sock;
-
-class Cl_message
-{
-  void SendMessageToServer(SOCKET sock, Opcodes opcode /*, struct message*/ )
-  {
-    /*if (send(sock, static_cast<const char*>(data), static_cast<int>(dataLength), 0) == SOCKET_ERROR)
-    {
-      std::cerr << "failed to send data to server (" << WSAGetLastError() << ")" << std::endl;
-      throw std::runtime_error("failed to send data");
-    }*/
-  }
-};
-
-
-std::map<int, Snake> _snakes = {};
 
 void game();
 void tick(Grid& grid, Snake& snake);
-int ConnectToServer(SOCKET sock);
-void AddSnakeToGame();
-void ReceiveMsg();
 
 int main()
 {
@@ -42,18 +21,6 @@ int main()
 	// Note : en C++ moderne on dispose de meilleurs outils pour g�n�rer des nombres al�atoires,
 	// mais ils sont aussi plus verbeux / complexes à utiliser, ce n'est pas tr�s int�ressant ici.
 	std::srand(std::time(nullptr));
-	
-	WSADATA data;
-	WSAStartup(MAKEWORD(2, 2), &data); 
-
-	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (sock == INVALID_SOCKET)
-	{
-		std::cerr << "failed to open socket (" << WSAGetLastError() << ")\n";
-		return EXIT_FAILURE;
-	};
-
-	ConnectToServer(sock);
 
 	/*
 	// D�sactivation de l'algorithme de naggle sur la socket `sock`
@@ -68,114 +35,8 @@ int main()
 	game();
 }
 
-int ConnectToServer(SOCKET sock) 
-{
-	sockaddr_in clientIp;
-	clientIp.sin_family = AF_INET;
-	clientIp.sin_port = htons(port);
-	for (;;)
-	{
-		std::cout << "please enter the server address: " << std::flush;
-
-		std::string serverIP;
-		std::cin >> serverIP;
-		if (serverIP.empty())
-			continue;
-
-		if (inet_pton(clientIp.sin_family, serverIP.c_str(), &clientIp.sin_addr) == 1)
-			break;
-
-		std::cout << "invalid IP!" << std::endl;
-	}
-
-	if (connect(sock, reinterpret_cast<sockaddr*>(&clientIp), sizeof(clientIp)) == SOCKET_ERROR)
-	{
-		std::cout << "failed to connect to server (" << WSAGetLastError() << ")";
-		return EXIT_FAILURE;
-	}
-
-	std::cout << "connected to server" << std::endl;
-
-	ReceiveMsg();
-
-
-	//// On demande au client de renseigner un pseudo
-	//std::string nickname;
-	//do
-	//{
-	//	std::cout << "enter your nickname: " << std::flush;
-	//	std::cin >> nickname;
-
-	//	// On vide le buffer d'entrée (comme on ne lit que le premier mot, ça évite de garder le second en mémoire)
-	//	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	//} while (nickname.empty());
-
-	//// Envoi du pseudo du joueur
-	//// On préfixe la taille du message et l'opcode avant celui-ci
-	//std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + nickname.size());
-
-	//// On sérialise l'entier 16bits
-	//std::uint16_t size = htons(sizeof(std::uint8_t) + nickname.size());
-	//std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
-
-	//// On écrit l'opcode
-	//buffer[sizeof(std::uint16_t)] = OpcodeNickname;
-
-	//// On écrit le pseudo
-	//std::memcpy(&buffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)], nickname.data(), nickname.size());
-
-	//// On envoie le pseudo au serveur
-	//if (send(sock, (char*)buffer.data(), buffer.size(), 0) == SOCKET_ERROR)
-	//{
-	//	std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
-	//	return EXIT_FAILURE;
-	//}
-
-}
-
-void AddSnakeToGame()
-{
-	//_snakes.Add()
-}
-
-void ReceiveMsg()
-{
-	std::vector<std::uint8_t> output(1024);
-	int byteRead = recv(sock, reinterpret_cast<char*>(output.data()), static_cast<int>(output.size()), 0);
-	if (byteRead == 0 || byteRead == SOCKET_ERROR)
-	{
-		if (byteRead == 0)
-			std::cout << "server closed connection" << std::endl;
-		else
-			std::cerr << "failed to read data from server (" << WSAGetLastError() << ")" << std::endl;
-
-		throw std::runtime_error("failed to read data");
-	}
-
-	output.resize(byteRead);
-	for (const auto& i : output)
-		std::cout << static_cast<uint8_t>(i) << ' ';
-
-	std::cout << " " << std::endl;
-}
-
-void Disconnect(SOCKET sock) 
-{
-	closesocket(sock);
-
-	WSACleanup();
-}
-
 void game()
 {
-	enum GameState
-	{
-		MENU,
-		GAME
-	};
-
-	GameState _gS = GameState::GAME;
-
 	// Chargement des assets du jeu
 	Resources resources;
 	if (!LoadResources(resources))
@@ -213,45 +74,20 @@ void game()
 	sf::Time appleInterval = sf::seconds(5.f);
 	sf::Time nextApple = clock.getElapsedTime() + appleInterval;
 
-	sf::Text text;
-
-	sf::Font font;
-	if (!font.loadFromFile("../assets/arial.ttf"))
-	{
-		std::cout << "Failed to load font: " << "arial.ttf" << std::endl;
-	}
-
-	// select the font
-	text.setFont(font); // font is a sf::Font
-
-	// set the string to display
-	text.setString("Hello world");
-
-	// set the character size
-	text.setCharacterSize(24); // in pixels, not points!
-
-	// set the color
-	text.setFillColor(sf::Color::Red);
-
-	// set the text style
-	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
-
 	while (window.isOpen())
 	{
-		if (_gS == GameState::GAME) 
+		// On traite les évènements fen�tre qui se sont produits depuis le dernier tour de boucles
+		sf::Event event;
+		while (window.pollEvent(event))
 		{
-
-			// On traite les évènements fen�tre qui se sont produits depuis le dernier tour de boucles
-			sf::Event event;
-			while (window.pollEvent(event))
+			switch (event.type)
 			{
-				switch (event.type)
-				{
-					// L'utilisateur souhaite fermer la fen�tre, fermons-la
+				// L'utilisateur souhaite fermer la fen�tre, fermons-la
 				case sf::Event::Closed:
 					window.close();
 					break;
-					// Une touche a été enfonc�e par l'utilisateur
+
+				// Une touche a été enfonc�e par l'utilisateur
 				case sf::Event::KeyPressed:
 				{
 					sf::Vector2i direction = sf::Vector2i(0, 0);
@@ -259,24 +95,28 @@ void game()
 					// On met à jour la direction si la touche sur laquelle l'utilisateur a appuy�e est une fl�che directionnelle
 					switch (event.key.code)
 					{
-					case sf::Keyboard::Up:
-						direction = sf::Vector2i(0, -1);
-						break;
+						case sf::Keyboard::Up:
+              Message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(0));
+							direction = sf::Vector2i(0, -1);
+							break;
 
-					case sf::Keyboard::Down:
-						direction = sf::Vector2i(0, 1);
-						break;
+						case sf::Keyboard::Down:
+              Message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(1));
+							direction = sf::Vector2i(0, 1);
+							break;
 
-					case sf::Keyboard::Left:
-						direction = sf::Vector2i(-1, 0);
-						break;
+						case sf::Keyboard::Left:
+              Message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(2));
+							direction = sf::Vector2i(-1, 0);
+							break;
 
-					case sf::Keyboard::Right:
-						direction = sf::Vector2i(1, 0);
-						break;
+						case sf::Keyboard::Right:
+              Message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(3));
+							direction = sf::Vector2i(1, 0);
+							break;
 
-					default:
-						break;
+						default:
+							break;
 					}
 
 					// On applique la direction, si modifi�e, au serpent
@@ -291,69 +131,52 @@ void game()
 
 				default:
 					break;
-				}
 			}
-
-			sf::Time now = clock.getElapsedTime();
-
-			// On v�rifie si assez de temps s'est �coul� pour faire avancer la logique du jeu
-			if (now >= nextTick)
-			{
-				// On met à jour la logique du jeu
-				tick(grid, snake);
-
-				// On pr�voit la prochaine mise à jour
-				nextTick += tickInterval;
-			}
-
-			// On v�rifie si assez de temps s'est �coul� pour faire apparaitre une nouvelle pomme
-			if (now >= nextApple)
-			{
-				// On �vite de remplacer un mur par une pomme ...
-				int x = 1 + rand() % (gridWidth - 2);
-				int y = 1 + rand() % (gridHeight - 2);
-
-				// On �vite de faire apparaitre une pomme sur un serpent
-				// si c'est le cas on retentera au prochain tour de boucle
-				if (!snake.TestCollision(sf::Vector2i(x, y), true))
-				{
-					grid.SetCell(x, y, CellType::Apple);
-
-					// On pr�voit la prochaine apparition de pomme
-					nextApple += appleInterval;
-				}
-			}
-
-			// On remplit la sc�ne d'une couleur plus jolie pour les yeux
-			window.clear(sf::Color(247, 230, 151));
-
-			// On affiche les �l�ments statiques
-			grid.Draw(window, resources);
-
-			// On affiche le serpent
-			snake.Draw(window, resources);
-
-			// On actualise l'affichage de la fen�tre
-			window.display();
-
-			//ReceiveMsg();
 		}
-		else if (_gS == GameState::MENU) 
+
+		sf::Time now = clock.getElapsedTime();
+		
+		// On v�rifie si assez de temps s'est �coul� pour faire avancer la logique du jeu
+		if (now >= nextTick)
 		{
-			// On remplit la sc�ne d'une couleur plus jolie pour les yeux
-			window.clear(sf::Color(247, 230, 151));
+			// On met à jour la logique du jeu
+			tick(grid, snake);
 
-			// On affiche les �l�ments statiques
-			grid.Draw(window, resources);
-
-			window.draw(text);
-
-			// On actualise l'affichage de la fen�tre
-			window.display();
+			// On pr�voit la prochaine mise à jour
+			nextTick += tickInterval;
 		}
+
+		// On v�rifie si assez de temps s'est �coul� pour faire apparaitre une nouvelle pomme
+		if (now >= nextApple)
+		{
+			// On �vite de remplacer un mur par une pomme ...
+			int x = 1 + rand() % (gridWidth - 2);
+			int y = 1 + rand() % (gridHeight - 2);
+
+			// On �vite de faire apparaitre une pomme sur un serpent
+			// si c'est le cas on retentera au prochain tour de boucle
+			if (!snake.TestCollision(sf::Vector2i(x, y), true))
+			{
+				grid.SetCell(x, y, CellType::Apple);
+
+				// On pr�voit la prochaine apparition de pomme
+				nextApple += appleInterval;
+			}
+		}
+
+		// On remplit la sc�ne d'une couleur plus jolie pour les yeux
+		window.clear(sf::Color(247, 230, 151));
+
+		// On affiche les �l�ments statiques
+		grid.Draw(window, resources);
+
+		// On affiche le serpent
+		snake.Draw(window, resources);
+
+		// On actualise l'affichage de la fen�tre
+		window.display();
 	}
 }
-
 
 void tick(Grid& grid, Snake& snake)
 {

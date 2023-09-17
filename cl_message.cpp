@@ -2,7 +2,7 @@
 
 
 
-void Cl_message::SendData(SOCKET sock, const void* data, std::size_t dataLength)
+void Message::SendData(SOCKET sock, const void* data, std::size_t dataLength)
 {
   if (send(sock, static_cast<const char*>(data), static_cast<int>(dataLength), 0) == SOCKET_ERROR)
   {
@@ -12,7 +12,7 @@ void Cl_message::SendData(SOCKET sock, const void* data, std::size_t dataLength)
 }
 
 
-void Cl_message::SendMessageToServer(SOCKET sock, Opcodes _opcode, InputMessageStruct structMessage /*temp struct message*/)
+void Message::SendMessageToServer(SOCKET sock, Opcodes _opcode, InputMessageStruct structMessage /*temp struct message*/)
 {
   std::vector<std::uint8_t> data(sizeof(std::uint16_t) + sizeof(Opcodes) + sizeof(InputMessageStruct));
   std::uint16_t size = htons(data.size());
@@ -23,10 +23,10 @@ void Cl_message::SendMessageToServer(SOCKET sock, Opcodes _opcode, InputMessageS
   SendData(sock, data.data(), size);
 }
 
-void Cl_message::SendMessageToServer(SOCKET sock, Opcodes _opcode, SpawnMessageStruct structMessage)
+void Message::SendMessageToServer(SOCKET sock, Opcodes _opcode, SpawnMessageStruct structMessage)
 {
 }
 
-void Cl_message::SendMessageToServer(SOCKET sock, Opcodes _opcode, CollideMessageStruct structMessage)
+void Message::SendMessageToServer(SOCKET sock, Opcodes _opcode, CollideMessageStruct structMessage)
 {
 }
