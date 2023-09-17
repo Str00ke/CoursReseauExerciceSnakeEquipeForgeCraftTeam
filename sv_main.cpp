@@ -188,6 +188,26 @@ int server(SOCKET sock)
 					std::cout << "client #" << client.id << " connected from " << strAddr << std::endl;
 
 					// Ici nous pourrions envoyer un message à tous les clients pour indiquer la connexion d'un nouveau client
+					std::string message = "TEST";
+
+					// On pr�fixe la taille du message avant celui-ci
+					std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + message.size());
+
+					// On s�rialise l'entier 16bits
+					std::uint16_t size = htons(message.size());
+					std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
+
+					// On �crit la chaine de caract�re
+					std::memcpy(&sendBuffer[sizeof(std::uint16_t)], message.data(), message.size());
+					for (Client& c : clients)
+					{
+						if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
+						{
+							std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
+							// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
+							// contentons-nous pour l'instant de logger l'erreur
+						}
+					}
 				}
 				else
 				{

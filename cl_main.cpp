@@ -9,6 +9,7 @@
 #include <iostream>
 #include <winsock2.h> 
 #include <ws2tcpip.h> 
+#include <map>
 
 const int windowWidth = cellSize * gridWidth;
 const int windowHeight = cellSize * gridHeight;
@@ -27,12 +28,13 @@ class Cl_message
 };
 
 
-
-
+std::map<int, Snake> _snakes = {};
 
 void game();
 void tick(Grid& grid, Snake& snake);
 int ConnectToServer(SOCKET sock);
+void AddSnakeToGame();
+void ReceiveMsg();
 
 int main()
 {
@@ -94,6 +96,9 @@ int ConnectToServer(SOCKET sock)
 
 	std::cout << "connected to server" << std::endl;
 
+	ReceiveMsg();
+
+
 	//// On demande au client de renseigner un pseudo
 	//std::string nickname;
 	//do
@@ -126,6 +131,32 @@ int ConnectToServer(SOCKET sock)
 	//	return EXIT_FAILURE;
 	//}
 
+}
+
+void AddSnakeToGame()
+{
+	//_snakes.Add()
+}
+
+void ReceiveMsg()
+{
+	std::vector<std::uint8_t> output(1024);
+	int byteRead = recv(sock, reinterpret_cast<char*>(output.data()), static_cast<int>(output.size()), 0);
+	if (byteRead == 0 || byteRead == SOCKET_ERROR)
+	{
+		if (byteRead == 0)
+			std::cout << "server closed connection" << std::endl;
+		else
+			std::cerr << "failed to read data from server (" << WSAGetLastError() << ")" << std::endl;
+
+		throw std::runtime_error("failed to read data");
+	}
+
+	output.resize(byteRead);
+	for (const auto& i : output)
+		std::cout << static_cast<uint8_t>(i) << ' ';
+
+	std::cout << " " << std::endl;
 }
 
 void Disconnect(SOCKET sock) 
@@ -304,6 +335,8 @@ void game()
 
 			// On actualise l'affichage de la fen�tre
 			window.display();
+
+			//ReceiveMsg();
 		}
 		else if (_gS == GameState::MENU) 
 		{
