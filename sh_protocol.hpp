@@ -7,7 +7,10 @@ enum Opcodes : int8_t
 {
   Input = 0,
   Spawn,
-  Collide
+  Collide,
+  RequestApple,
+  ConfirmApple,
+  DistributApple
 };
 
 

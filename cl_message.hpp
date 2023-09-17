@@ -5,7 +5,7 @@
 #include <vector>
 
 
-class Cl_message
+class Message
 {
 private:
   static void SendData(SOCKET sock, const void* data, std::size_t dataLength);
