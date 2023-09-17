@@ -3,7 +3,6 @@
 #include "sh_protocol.hpp"
 #include "cl_grid.hpp"
 #include "cl_snake.hpp"
-#include "cl_message.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <winsock2.h>
@@ -32,7 +31,7 @@ int main()
 
   WSADATA data;
   WSAStartup(MAKEWORD(2, 2), &data);
-  SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (sock == INVALID_SOCKET)
   {
     std::cerr << "failed to open socket (" << WSAGetLastError() << ")\n";
