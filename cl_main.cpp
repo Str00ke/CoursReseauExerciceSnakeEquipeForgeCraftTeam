@@ -51,7 +51,7 @@ int main()
 		return EXIT_FAILURE;
 	};
 
-	//ConnectToServer(sock);
+	ConnectToServer(sock);
 
 	/*
 	// D�sactivation de l'algorithme de naggle sur la socket `sock`
@@ -143,7 +143,7 @@ void game()
 		GAME
 	};
 
-	GameState _gS = GameState::MENU;
+	GameState _gS = GameState::GAME;
 
 	// Chargement des assets du jeu
 	Resources resources;
@@ -181,6 +181,29 @@ void game()
 	// Temps entre les apparitions de pommes
 	sf::Time appleInterval = sf::seconds(5.f);
 	sf::Time nextApple = clock.getElapsedTime() + appleInterval;
+
+	sf::Text text;
+
+	sf::Font font;
+	if (!font.loadFromFile("../assets/arial.ttf"))
+	{
+		std::cout << "Failed to load font: " << "arial.ttf" << std::endl;
+	}
+
+	// select the font
+	text.setFont(font); // font is a sf::Font
+
+	// set the string to display
+	text.setString("Hello world");
+
+	// set the character size
+	text.setCharacterSize(24); // in pixels, not points!
+
+	// set the color
+	text.setFillColor(sf::Color::Red);
+
+	// set the text style
+	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
 
 	while (window.isOpen())
 	{
@@ -289,6 +312,8 @@ void game()
 
 			// On affiche les �l�ments statiques
 			grid.Draw(window, resources);
+
+			window.draw(text);
 
 			// On actualise l'affichage de la fen�tre
 			window.display();
