@@ -3,6 +3,7 @@
 #include "sh_protocol.hpp"
 #include "cl_grid.hpp"
 #include "cl_snake.hpp"
+#include "cl_message.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <winsock2.h>
@@ -10,23 +11,6 @@
 
 const int windowWidth = cellSize * gridWidth;
 const int windowHeight = cellSize * gridHeight;
-static SOCKET sock;
-
-class Cl_message
-{
-  void SendMessageToServer(SOCKET sock, Opcodes opcode /*, struct message*/ )
-  {
-    /*if (send(sock, static_cast<const char*>(data), static_cast<int>(dataLength), 0) == SOCKET_ERROR)
-    {
-      std::cerr << "failed to send data to server (" << WSAGetLastError() << ")" << std::endl;
-      throw std::runtime_error("failed to send data");
-    }*/
-  }
-};
-
-
-
-
 
 void game();
 void tick(Grid& grid, Snake& snake);
@@ -112,18 +96,22 @@ void game()
 					switch (event.key.code)
 					{
 						case sf::Keyboard::Up:
+              Cl_message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(0));
 							direction = sf::Vector2i(0, -1);
 							break;
 
 						case sf::Keyboard::Down:
+              Cl_message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(1));
 							direction = sf::Vector2i(0, 1);
 							break;
 
 						case sf::Keyboard::Left:
+              Cl_message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(2));
 							direction = sf::Vector2i(-1, 0);
 							break;
 
 						case sf::Keyboard::Right:
+              Cl_message::SendMessageToServer(sock, Opcodes::Input, InputMessageStruct(3));
 							direction = sf::Vector2i(1, 0);
 							break;
 
