@@ -2,6 +2,7 @@
 #define NOMINMAX
 
 #include "sh_constants.hpp"
+#include "sh_protocol.hpp"
 #include <SFML/System/Clock.hpp> //< Gestion du temps avec la SFML
 #include <cassert> //< assert
 #include <iostream> //< std::cout/std::cerr
@@ -107,6 +108,9 @@ int server(SOCKET sock)
 	sf::Time tickInterval = sf::seconds(tickDelay);
 	sf::Time nextTick = clock.getElapsedTime() + tickInterval;
 
+	sf::Time appleInterval = sf::seconds(5.f);
+	sf::Time nextApple = clock.getElapsedTime() + appleInterval;
+
 	// Boucle infinie pour continuer d'accepter des clients
 	for (;;)
 	{
@@ -188,6 +192,26 @@ int server(SOCKET sock)
 					std::cout << "client #" << client.id << " connected from " << strAddr << std::endl;
 
 					// Ici nous pourrions envoyer un message à tous les clients pour indiquer la connexion d'un nouveau client
+					std::string message = "TEST";
+
+					// On pr�fixe la taille du message avant celui-ci
+					std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + message.size());
+
+					// On s�rialise l'entier 16bits
+					std::uint16_t size = htons(message.size());
+					std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
+
+					// On �crit la chaine de caract�re
+					std::memcpy(&sendBuffer[sizeof(std::uint16_t)], message.data(), message.size());
+					for (Client& c : clients)
+					{
+						if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
+						{
+							std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
+							// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
+							// contentons-nous pour l'instant de logger l'erreur
+						}
+					}
 				}
 				else
 				{
@@ -247,30 +271,37 @@ int server(SOCKET sock)
 							std::size_t handledSize = sizeof(messageSize) + messageSize;
 							client.pendingData.erase(client.pendingData.begin(), client.pendingData.begin() + handledSize);
 
+							std::uint8_t opcode = client.pendingData[sizeof(messageSize)];
+
 							// -- Gestion du message --
 
 							// Pr�fixons le message d'un "Client #X - " pour identifier le client
 							message = "Client #" + std::to_string(client.id) + " - " + message;
 
 							// On pr�fixe la taille du message avant celui-ci
-							std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + message.size());
 
-							// On s�rialise l'entier 16bits
-							std::uint16_t size = htons(message.size());
-							std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
-
-							// On �crit la chaine de caract�re
-							std::memcpy(&sendBuffer[sizeof(std::uint16_t)], message.data(), message.size());
-
-							std::cout << message << std::endl;
-							for (Client& c : clients)
+							switch (opcode)
 							{
-								if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
-								{
-									std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
-									// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
-									// contentons-nous pour l'instant de logger l'erreur
-								}
+								case ConfirmApple:
+									std::string confirmAppleresponse = "Spawn Apple";
+									std::uint16_t size = htons(confirmAppleresponse.size());
+
+									std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
+
+									std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
+									buffer[sizeof(std::uint16_t)] = DistributApple;
+									std::memcpy(&sendBuffer[sizeof(std::uint16_t)], confirmAppleresponse.data(), confirmAppleresponse.size());
+
+									for (Client& c : clients)
+									{
+										if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
+										{
+											std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
+											// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
+											// contentons-nous pour l'instant de logger l'erreur
+										}
+									}
+									break;
 							}
 						}
 					}
@@ -288,6 +319,29 @@ int server(SOCKET sock)
 
 			// On pr�voit la prochaine mise à jour
 			nextTick += tickInterval;
+		}
+
+		if (now >= nextApple)
+		{
+			int randomClient = rand() % (clients.size() -1);
+
+			std::string message;
+			std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + message.size());
+
+			std::uint16_t size = htons(sizeof(std::uint8_t) + message.size());
+			std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
+
+			buffer[sizeof(std::uint16_t)] = RequestApple;
+
+			std::memcpy(&buffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)], message.data(), message.size());
+
+			if (send(clients[randomClient].socket, (char*)buffer.data(), buffer.size(), 0) == SOCKET_ERROR)
+			{
+				std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
+				return EXIT_FAILURE;
+			}
+			
+			nextApple += appleInterval;
 		}
 	}
 
