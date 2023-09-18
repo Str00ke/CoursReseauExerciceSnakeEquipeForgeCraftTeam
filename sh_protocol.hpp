@@ -6,6 +6,7 @@
 enum Opcodes : uint8_t
 {
   Input = 0,
+  Nickname,
   Spawn,
   Collide,
   RequestApple,

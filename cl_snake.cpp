@@ -55,6 +55,10 @@ m_followingDir(direction)
 	Respawn(spawnPosition, direction);
 }
 
+Snake::Snake()
+{
+}
+
 void Snake::Advance()
 {
 	for (std::size_t i = m_body.size() - 1; i != 0; i--)

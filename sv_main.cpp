@@ -282,26 +282,30 @@ int server(SOCKET sock)
 
 							switch (opcode)
 							{
-							case ConfirmApple:
-								std::string confirmAppleresponse = message;
-								std::uint16_t size = htons(confirmAppleresponse.size());
-
-								std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
-
-								std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
-								buffer[sizeof(std::uint16_t)] = DistributApple;
-								std::memcpy(&sendBuffer[sizeof(std::uint16_t)], confirmAppleresponse.data(), confirmAppleresponse.size());
-
-								for (Client& c : clients)
-								{
-									if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
-									{
-										std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
-										// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
-										// contentons-nous pour l'instant de logger l'erreur
-									}
-								}
+							case Nickname:
+								std::cout << "Nick" << std::endl;
 								break;
+
+							//case ConfirmApple:
+							//	std::string confirmAppleresponse = message;
+							//	std::uint16_t size = htons(confirmAppleresponse.size());
+
+							//	std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
+
+							//	std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
+							//	buffer[sizeof(std::uint16_t)] = DistributApple;
+							//	std::memcpy(&sendBuffer[sizeof(std::uint16_t)], confirmAppleresponse.data(), confirmAppleresponse.size());
+
+							//	for (Client& c : clients)
+							//	{
+							//		if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
+							//		{
+							//			std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
+							//			// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
+							//			// contentons-nous pour l'instant de logger l'erreur
+							//		}
+							//	}
+							//	break;
 							}
 						}
 					}

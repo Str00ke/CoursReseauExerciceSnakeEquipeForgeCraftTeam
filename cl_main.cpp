@@ -77,31 +77,34 @@ int ConnectToServer(SOCKET sock)
 
 	ReceiveMsg();
 
-	//// On demande au client de renseigner un pseudo
-	//std::string nickname;
-	//do
-	//{
-	//	std::cout << "enter your nickname: " << std::flush;
-	//	std::cin >> nickname;
-	//	// On vide le buffer d'entrée (comme on ne lit que le premier mot, ça évite de garder le second en mémoire)
-	//	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-	//} while (nickname.empty());
-	//// Envoi du pseudo du joueur
-	//// On préfixe la taille du message et l'opcode avant celui-ci
-	//std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + nickname.size());
-	//// On sérialise l'entier 16bits
-	//std::uint16_t size = htons(sizeof(std::uint8_t) + nickname.size());
-	//std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
-	//// On écrit l'opcode
-	//buffer[sizeof(std::uint16_t)] = OpcodeNickname;
-	//// On écrit le pseudo
-	//std::memcpy(&buffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)], nickname.data(), nickname.size());
-	//// On envoie le pseudo au serveur
-	//if (send(sock, (char*)buffer.data(), buffer.size(), 0) == SOCKET_ERROR)
-	//{
-	//	std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
-	//	return EXIT_FAILURE;
-	//}
+	// On demande au client de renseigner un pseudo
+	std::string nickname;
+	do
+	{
+		std::cout << "enter your nickname: " << std::flush;
+		std::cin >> nickname;
+		// On vide le buffer d'entrée (comme on ne lit que le premier mot, ça évite de garder le second en mémoire)
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	} while (nickname.empty());
+	// Envoi du pseudo du joueur
+	std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + nickname.size());
+
+	// On sérialise l'entier 16bits
+	std::uint16_t size = htons(sizeof(std::uint8_t) + nickname.size());
+	std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
+
+	// On écrit l'opcode
+	buffer[sizeof(std::uint16_t)] = Nickname;
+
+	// On écrit le pseudo
+	std::memcpy(&buffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)], nickname.data(), nickname.size());
+
+	// On envoie le pseudo au serveur
+	if (send(sock, (char*)buffer.data(), buffer.size(), 0) == SOCKET_ERROR)
+	{
+		std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
+		return EXIT_FAILURE;
+	}
 }
 
 void AddSnakeToGame()
@@ -173,22 +176,22 @@ void game()
 	// Temps entre les apparitions de pommes
 	sf::Time appleInterval = sf::seconds(5.f);
 	sf::Time nextApple = clock.getElapsedTime() + appleInterval;
-	sf::Text text;
-	sf::Font font;
-	if (!font.loadFromFile("../assets/arial.ttf"))
-	{
-		std::cout << "Failed to load font: " << "arial.ttf" << std::endl;
-	}
-	// select the font
-	text.setFont(font); // font is a sf::Font
-	// set the string to display
-	text.setString("Hello world");
-	// set the character size
-	text.setCharacterSize(24); // in pixels, not points!
-	// set the color
-	text.setFillColor(sf::Color::Red);
-	// set the text style
-	text.setStyle(sf::Text::Bold | sf::Text::Underlined);
+	//sf::Text text;
+	//sf::Font font;
+	//if (!font.loadFromFile("../assets/arial.ttf"))
+	//{
+	//	std::cout << "Failed to load font: " << "arial.ttf" << std::endl;
+	//}
+	//// select the font
+	//text.setFont(font); // font is a sf::Font
+	//// set the string to display
+	//text.setString("Hello world");
+	//// set the character size
+	//text.setCharacterSize(24); // in pixels, not points!
+	//// set the color
+	//text.setFillColor(sf::Color::Red);
+	//// set the text style
+	//text.setStyle(sf::Text::Bold | sf::Text::Underlined);
 	while (window.isOpen())
 	{
 		if (_gS == GameState::GAME)
@@ -250,64 +253,64 @@ void game()
 			// On v�rifie si assez de temps s'est �coul� pour faire apparaitre une nouvelle pomme
 
 			bool running = true;
-			std::thread readThread([&]()
-			{
-				std::vector<std::uint8_t> pendingData;
-				while (running)
-				{
-					// On attend que le serveur nous envoie un message (ou se déconnecte)
-					char buffer[1024];
-					int byteRead = recv(sock, buffer, sizeof(buffer), 0);
-					if (byteRead == 0 || byteRead == SOCKET_ERROR)
-					{
-						// On a eu une erreur, partons du principe que nous sommes déconnectés
-						if (byteRead == 0)
-							std::cout << "server disconnected" << std::endl;
-						else
-							std::cerr << "failed to read from server (" << WSAGetLastError() << "), disconnecting..." << std::endl;
+			//std::thread readThread([&]()
+			//{
+			//	std::vector<std::uint8_t> pendingData;
+			//	while (running)
+			//	{
+			//		// On attend que le serveur nous envoie un message (ou se déconnecte)
+			//		char buffer[1024];
+			//		int byteRead = recv(sock, buffer, sizeof(buffer), 0);
+			//		if (byteRead == 0 || byteRead == SOCKET_ERROR)
+			//		{
+			//			// On a eu une erreur, partons du principe que nous sommes déconnectés
+			//			if (byteRead == 0)
+			//				std::cout << "server disconnected" << std::endl;
+			//			else
+			//				std::cerr << "failed to read from server (" << WSAGetLastError() << "), disconnecting..." << std::endl;
 
-						running = false;
-					}
-					else
-					{
-						std::size_t oldSize = pendingData.size();
-						pendingData.resize(oldSize + byteRead);
-						std::memcpy(&pendingData[oldSize], buffer, byteRead);
+			//			running = false;
+			//		}
+			//		else
+			//		{
+			//			std::size_t oldSize = pendingData.size();
+			//			pendingData.resize(oldSize + byteRead);
+			//			std::memcpy(&pendingData[oldSize], buffer, byteRead);
 
-						while (pendingData.size() >= sizeof(std::uint16_t))
-						{
-							// -- Réception du message --
+			//			while (pendingData.size() >= sizeof(std::uint16_t))
+			//			{
+			//				// -- Réception du message --
 
-							// On déserialise la taille du message
-							std::uint16_t messageSize;
-							std::memcpy(&messageSize, &pendingData[0], sizeof(messageSize));
+			//				// On déserialise la taille du message
+			//				std::uint16_t messageSize;
+			//				std::memcpy(&messageSize, &pendingData[0], sizeof(messageSize));
 
-							messageSize = ntohs(messageSize);
+			//				messageSize = ntohs(messageSize);
 
-							if (pendingData.size() - sizeof(messageSize) < messageSize)
-								break;
+			//				if (pendingData.size() - sizeof(messageSize) < messageSize)
+			//					break;
 
-							std::uint8_t opcode = pendingData[sizeof(std::uint16_t)];
+			//				std::uint8_t opcode = pendingData[sizeof(std::uint16_t)];
 
-							std::size_t stringSize = messageSize - 1;
+			//				std::size_t stringSize = messageSize - 1;
 
-							switch (opcode)
-							{
-								case RequestApple:
-									CheckAppleSpawn();
-									break;
-								case DistributApple:
+			//				switch (opcode)
+			//				{
+			//					case RequestApple:
+			//						CheckAppleSpawn();
+			//						break;
+			//					case DistributApple:
 
-									break;
-							}
+			//						break;
+			//				}
 
-							// On retire la taille que nous de traiter des données en attente
-							std::size_t handledSize = sizeof(messageSize) + messageSize; //< l'opcode fait partie de messageSize
-							pendingData.erase(pendingData.begin(), pendingData.begin() + handledSize);
-						}
-					}
-				}
-			});
+			//				// On retire la taille que nous de traiter des données en attente
+			//				std::size_t handledSize = sizeof(messageSize) + messageSize; //< l'opcode fait partie de messageSize
+			//				pendingData.erase(pendingData.begin(), pendingData.begin() + handledSize);
+			//			}
+			//		}
+			//	}
+			//});
 
 			// On remplit la sc�ne d'une couleur plus jolie pour les yeux
 			window.clear(sf::Color(247, 230, 151));
@@ -327,7 +330,7 @@ void game()
 			window.clear(sf::Color(247, 230, 151));
 			// On affiche les �l�ments statiques
 			grid.Draw(window, resources);
-			window.draw(text);
+			//window.draw(text);
 			// On actualise l'affichage de la fen�tre
 			window.display();
 		}
