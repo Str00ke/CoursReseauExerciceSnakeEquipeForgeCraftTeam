@@ -125,6 +125,51 @@ server(SOCKET sock)
 
           std::cout << "client #" << client.id << " connected from " << strAddr
                     << std::endl;  
+
+		  if (clients.size() > 0)
+		  {
+			  std::string spawnMsg = " ";
+			  std::vector<std::uint8_t> spawnBuffer(
+				  sizeof(std::uint16_t) + sizeof(std::uint8_t) + spawnMsg.size());
+
+			  std::uint16_t size = htons(sizeof(std::uint8_t) + spawnMsg.size());
+			  std::memcpy(&spawnBuffer[0], &size, sizeof(std::uint16_t));
+
+			  std::uint8_t opcode = 2;
+			  std::memcpy(&spawnBuffer[sizeof(std::uint16_t)],
+				  &opcode,
+				  sizeof(std::uint8_t));
+			  std::memcpy(
+				  &spawnBuffer[sizeof(std::uint16_t) + sizeof(std::uint8_t)],
+				  spawnMsg.data(),
+				  spawnMsg.size());
+
+			  for (Client& c : clients) {
+                  if (c.id != client.id)
+                  {
+					  if (send(c.socket,
+						  (char*)spawnBuffer.data(),
+						  spawnBuffer.size(),
+						  0) == SOCKET_ERROR) {
+						  std::cerr << "failed to send message to client #" << c.id
+							  << ": (" << WSAGetLastError() << ")\n";
+					  }
+                  }
+                  else
+                  {
+                      for (size_t i = 0; i < clients.size(); ++i)
+                      {
+						  if (send(c.socket,
+							  (char*)spawnBuffer.data(),
+							  spawnBuffer.size(),
+							  0) == SOCKET_ERROR) {
+							  std::cerr << "failed to send message to client #" << c.id
+								  << ": (" << WSAGetLastError() << ")\n";
+						  }
+                      }
+                  }
+			  }
+		  }
         } else {  
           auto clientIt =
             std::find_if(clients.begin(), clients.end(), [&](const Client& c) {
