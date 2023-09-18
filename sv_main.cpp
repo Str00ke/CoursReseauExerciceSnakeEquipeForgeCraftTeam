@@ -123,7 +123,7 @@ int server(SOCKET sock)
 		std::vector<WSAPOLLFD> pollDescriptors;
 		{
 			// La m�thode emplace_back construit un objet à l'int�rieur du vector et nous renvoie une r�f�rence dessus
-			// alternativement nous pourrions �galement construire une variable de type WSAPOLLFD et l'ajouter au vector avec push_back 
+			// alternativement nous pourrions �galement construire une variable de type WSAPOLLFD et l'ajouter au vector avec push_back
 			auto& serverDescriptor = pollDescriptors.emplace_back();
 			serverDescriptor.fd = sock;
 			serverDescriptor.events = POLLRDNORM;
@@ -282,26 +282,26 @@ int server(SOCKET sock)
 
 							switch (opcode)
 							{
-								case ConfirmApple:
-									std::string confirmAppleresponse = message;
-									std::uint16_t size = htons(confirmAppleresponse.size());
+							case ConfirmApple:
+								std::string confirmAppleresponse = message;
+								std::uint16_t size = htons(confirmAppleresponse.size());
 
-									std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
+								std::vector<std::uint8_t> sendBuffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + confirmAppleresponse.size());
 
-									std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
-									buffer[sizeof(std::uint16_t)] = DistributApple;
-									std::memcpy(&sendBuffer[sizeof(std::uint16_t)], confirmAppleresponse.data(), confirmAppleresponse.size());
+								std::memcpy(&sendBuffer[0], &size, sizeof(std::uint16_t));
+								buffer[sizeof(std::uint16_t)] = DistributApple;
+								std::memcpy(&sendBuffer[sizeof(std::uint16_t)], confirmAppleresponse.data(), confirmAppleresponse.size());
 
-									for (Client& c : clients)
+								for (Client& c : clients)
+								{
+									if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
 									{
-										if (send(c.socket, (char*)sendBuffer.data(), sendBuffer.size(), 0) == SOCKET_ERROR)
-										{
-											std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
-											// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
-											// contentons-nous pour l'instant de logger l'erreur
-										}
+										std::cerr << "failed to send message to client #" << c.id << ": (" << WSAGetLastError() << ")\n";
+										// Pas de return ici pour �viter de casser le serveur sur l'envoi à un seul client,
+										// contentons-nous pour l'instant de logger l'erreur
 									}
-									break;
+								}
+								break;
 							}
 						}
 					}
@@ -323,7 +323,7 @@ int server(SOCKET sock)
 
 		if (now >= nextApple)
 		{
-			int randomClient = rand() % (clients.size() -1);
+			/*int randomClient = rand() % (clients.size() - 1);
 
 			std::string message;
 			std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) + sizeof(std::uint8_t) + message.size());
@@ -339,8 +339,8 @@ int server(SOCKET sock)
 			{
 				std::cerr << "failed to send message to server (" << WSAGetLastError() << ")\n";
 				return EXIT_FAILURE;
-			}
-			
+			}*/
+
 			nextApple += appleInterval;
 		}
 	}
@@ -350,5 +350,4 @@ int server(SOCKET sock)
 
 void tick()
 {
-
 }
