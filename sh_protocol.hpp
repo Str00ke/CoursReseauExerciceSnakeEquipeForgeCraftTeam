@@ -3,7 +3,7 @@
 
 // Ce fichier contient tout ce qui va être lié au protocole du jeu, à la façon dont le client et le serveur vont communiquer
 
-enum Opcodes : int8_t
+enum Opcodes : uint8_t
 {
   Input = 0,
   Spawn,
@@ -16,9 +16,9 @@ enum Opcodes : int8_t
 
 struct InputMessageStruct
 {
-  InputMessageStruct(int8_t _input) : input(_input){}
+  InputMessageStruct(uint8_t _input) : input(_input){}
   //add if needed
-  int8_t input = 0;
+  uint8_t input = 0;
 };
 
 struct SpawnMessageStruct
