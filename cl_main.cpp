@@ -8,6 +8,7 @@
 #include <thread>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <map>
 
 const int windowWidth = cellSize * gridWidth;
 const int windowHeight = cellSize * gridHeight;
@@ -20,6 +21,9 @@ int
 client(SOCKET sock);
 
 SOCKET sock;
+
+void AddSnake();
+std::map<int, Snake> _snakes = {};
 
 int
 main()
@@ -56,12 +60,16 @@ main()
       return EXIT_FAILURE;
     }
     std::cout << "connected to server" << std::endl;
-    std::string nickname;
-    do {
-      std::cout << "enter your nickname: " << std::flush;
-      std::cin >> nickname;
-      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    } while (nickname.empty());
+
+	std::string nickname;
+	do {
+	  std::cout << "enter your nickname: " << std::flush;
+
+	  std::cin >> nickname;
+	  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	  std::cout << "test" << std::endl;
+	} while (nickname.empty());
+
     std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) +
                                      sizeof(std::uint8_t) + nickname.size());
     std::uint16_t size = htons(sizeof(std::uint8_t) + nickname.size());
@@ -117,7 +125,11 @@ main()
               &pendingData[sizeof(messageSize) + sizeof(std::uint8_t)],
               stringSize);
             std::cout << message << std::endl;
-          } else
+          } else if (opcode == std::uint8_t(2))
+          {
+              AddSnake();
+          }
+          else
             std::cout << "unexpected opcode " << +opcode << std::endl;
           std::size_t handledSize = sizeof(messageSize) + messageSize;
           pendingData.erase(pendingData.begin(),
@@ -149,9 +161,6 @@ game()
     viewSize / 2.f - sf::Vector2f(cellSize, cellSize) / 2.f;
   window.setView(sf::View(viewCenter, viewSize));
   Grid grid(gridWidth, gridHeight);
-  Snake snake(sf::Vector2i(gridWidth / 2, gridHeight / 2),
-              sf::Vector2i(1, 0),
-              sf::Color::Green);
   sf::Clock clock;
   sf::Time tickInterval = sf::seconds(tickDelay);
   sf::Time nextTick = clock.getElapsedTime() + tickInterval;
@@ -188,8 +197,8 @@ game()
               break;
           }
           if (direction != sf::Vector2i(0, 0)) {
-            if (direction != -snake.GetCurrentDirection())
-              snake.SetFollowingDirection(direction);
+            if (direction != -_snakes[0].GetCurrentDirection())
+                _snakes[0].SetFollowingDirection(direction);
           }
           break;
         }
@@ -201,20 +210,25 @@ game()
 
     sf::Time now = clock.getElapsedTime();
     if (now >= nextTick) {
-      tick(grid, snake);
+		for (auto& [k, v] : _snakes)
+            tick(grid, v);
+      
       nextTick += tickInterval;
     }
     if (now >= nextApple) {
       int x = 1 + rand() % (gridWidth - 2);
       int y = 1 + rand() % (gridHeight - 2);
-      if (!snake.TestCollision(sf::Vector2i(x, y), true)) {
-        grid.SetCell(x, y, CellType::Apple);
-        nextApple += appleInterval;
-      }
+	  for (auto& [k, v] : _snakes)
+		  if (!v.TestCollision(sf::Vector2i(x, y), true)) {
+			  grid.SetCell(x, y, CellType::Apple);
+			  nextApple += appleInterval;
+		  }
+      
     }
     window.clear(sf::Color(247, 230, 151));
     grid.Draw(window, resources);
-    snake.Draw(window, resources);
+    for(auto &[k, v] : _snakes)
+        v.Draw(window, resources);
     window.display();
   }
 }
@@ -245,9 +259,9 @@ tick(Grid& grid, Snake& snake)
                   sf::Vector2i(1, 0));
   }
 
-  std::string message = "queue";
+  std::string message = "";
   std::vector<std::uint8_t> buffer(sizeof(std::uint16_t) +
-                                   sizeof(std::uint8_t) + message.size());
+                                   sizeof(std::uint8_t) + message.size() + 1);
   std::uint16_t size = htons(sizeof(std::uint8_t) + message.size());
   std::memcpy(&buffer[0], &size, sizeof(std::uint16_t));
   buffer[sizeof(std::uint16_t)] = std::uint8_t(1);
@@ -265,4 +279,24 @@ int
 client(SOCKET sock)
 {
   return EXIT_SUCCESS;
+}
+
+void AddSnake()
+{
+	std::cout << "Add snake" << std::endl;
+
+    if (_snakes.size() == 0)
+    {
+		Snake snake(sf::Vector2i(gridWidth / 2, gridHeight / 2),
+			sf::Vector2i(1, 0),
+			sf::Color::Green);
+		_snakes.emplace(_snakes.size(), snake);
+    }
+    else if (_snakes.size() > 0)
+    {
+		Snake snake(sf::Vector2i(gridWidth / 2 + 2, gridHeight / 2 + 2),
+			sf::Vector2i(1, 0),
+			sf::Color::Green);
+		_snakes.emplace(_snakes.size(), snake);
+    }
 }
